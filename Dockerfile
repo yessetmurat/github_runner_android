@@ -7,9 +7,9 @@ ARG RUNNER_ARCH
 ARG ANDROID_SDK_VERSION=9477386
 
 # Setting environment variables
-ENV ANDROID_SDK_ROOT=/opt/android-sdk \
-    PATH=${PATH}:${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${ANDROID_SDK_ROOT}/cmdline-tools/tools/bin:${ANDROID_SDK_ROOT}/platform-tools:${ANDROID_SDK_ROOT}/emulator \
-    DEBIAN_FRONTEND=noninteractive
+ENV ANDROID_SDK_ROOT=/opt/android-sdk
+ENV PATH=${PATH}:${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${ANDROID_SDK_ROOT}/cmdline-tools/tools/bin:${ANDROID_SDK_ROOT}/platform-tools:${ANDROID_SDK_ROOT}/emulator
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Installing necessary packages and cleaning up in one layer
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
@@ -33,20 +33,24 @@ RUN mkdir -p ${ANDROID_SDK_ROOT}/cmdline-tools && \
 RUN yes | sdkmanager --licenses && \
     sdkmanager "build-tools;30.0.2"
 
+WORKDIR /home/gradle
+
 # Installing GitHub Actions Runner
-RUN mkdir -p /home/gradle/actions-runner && \
+RUN mkdir -p actions-runner && \
     curl -O -L https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-${RUNNER_ARCH}-${RUNNER_VERSION}.tar.gz && \
-    tar -xzf actions-runner-linux-${RUNNER_ARCH}-${RUNNER_VERSION}.tar.gz -C /home/gradle/actions-runner && \
+    tar -xzf actions-runner-linux-${RUNNER_ARCH}-${RUNNER_VERSION}.tar.gz -C actions-runner && \
     rm actions-runner*.tar.gz
 
 # Switching back to root to install runner dependencies
 USER root
-RUN /home/gradle/actions-runner/bin/installdependencies.sh
+RUN actions-runner/bin/installdependencies.sh
+
+# Copying start script and setting entrypoint
+COPY start.sh start.sh
+
+RUN chown gradle:gradle start.sh && chmod +x start.sh
 
 # Switching back to gradle user
 USER gradle
 
-# Copying start script and setting entrypoint
-COPY start.sh start.sh
-RUN chmod +x start.sh
 ENTRYPOINT ["./start.sh"]

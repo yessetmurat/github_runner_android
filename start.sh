@@ -26,7 +26,7 @@ if ! REG_TOKEN=$(echo $REG_TOKEN | jq .token --raw-output); then
 fi
 
 # Change to the runner's directory
-cd /home/runner/actions-runner || exit
+cd $HOME/actions-runner || exit
 
 # Configure the runner
 ./config.sh --unattended --url "https://github.com/$OWNER/$REPOSITORY" \
